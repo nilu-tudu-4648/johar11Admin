@@ -1,20 +1,55 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import "react-native-gesture-handler";
+import { store } from "./src/store/configureStore";
+import { Provider } from "react-redux";
+import { configureFonts, useTheme, PaperProvider } from "react-native-paper";
+import DrawerNavigator from "./src/navigation/DrawerNavigator";
+import { NavigationContainer } from "@react-navigation/native";
+import { useFonts } from "expo-font";
+const App = () => {
+  const [loaded] = useFonts({
+    "Inter-Medium": require("./assets/fonts/Inter-Medium.ttf"),
+  });
+  const baseFont = {
+    fontFamily: "Inter-Medium",
+  };
 
-export default function App() {
+  const baseVariants = configureFonts({ config: baseFont });
+  const customVariants = {
+    displayMedium: {
+      ...baseVariants.displayMedium,
+      fontFamily: "Inter-Bold",
+    },
+  };
+
+  const fonts = configureFonts({
+    config: {
+      ...baseVariants,
+      ...customVariants,
+    },
+  });
+
+  const theme = useTheme();
+
+  if (!loaded) {
+    return null;
+  }
+
+  // eas build -p android --profile preview
+  // eas update --branch preview --message "Updating the app"
+
+  // eas build -p android --profile prod
+  // eas update --branch prod --message "Updating the app"
+  // npx expo  start --dev-client
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Provider store={store}>
+        <PaperProvider theme={{ ...theme, fonts }}>
+          <DrawerNavigator />
+        </PaperProvider>
+      </Provider>
+    </NavigationContainer>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
