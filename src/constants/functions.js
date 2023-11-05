@@ -397,8 +397,17 @@ export const deleteMatch = async (id, func) => {
     console.log(error);
   }
 };
+export const markItcomplete = async (fdata, func) => {
+  try {
+    const postRef = doc(db, FIRESTORE_COLLECTIONS.TOURNAMENTS, fdata.id);
+    await updateDoc(postRef, fdata).then(async () => {
+      func();
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
 export const getAllPlayers = async (dispatch, func) => {
-  console.log("called");
   try {
     const q = query(collection(db, FIRESTORE_COLLECTIONS.PLAYERS));
     const querySnapshot = await getDocs(q);

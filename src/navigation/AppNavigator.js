@@ -14,18 +14,13 @@ import {
   AllTeamsScreen,
   AllUsersScreen,
   CreateTournament,
-  HomeScreen,
   LoginScreen,
-  MatchDetailsScreen,
   PointsSystemScreen,
   ProfileScreen,
-  SelectCaptainScreen,
   SignUpScreen,
   WelcomeScreen,
-  WinningPointsScreen,
 } from "../screens";
 import { StyleHeader } from "../components";
-import CreateTeamScreen from "../screens/CreateTeamScreen";
 import AllPlayersScreen from "../screens/AllPlayersScreen";
 import AllTournaments from "../screens/AllTournaments";
 const Stack = createNativeStackNavigator();

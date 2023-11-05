@@ -12,6 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   deleteMatch,
   getAllMatches,
+  markItcomplete,
 } from "../constants/functions";
 import { NAVIGATION } from "../constants/routes";
 import { COLORS, FSTYLES, SIZES } from "../constants/theme";
@@ -41,8 +42,11 @@ const AllTournaments = ({ navigation }) => {
       setData(allMatches);
     }
   }, [query, allMatches, filterFunction]);
+  const getMatch = () => {
+    getAllMatches(dispatch, setloading);
+  };
   useEffect(() => {
-    getAllMatches(dispatch, setloading); // Assuming this function fetches data and sets it in Redux store
+    getMatch();
   }, [dispatch]);
 
   useEffect(() => {
@@ -69,7 +73,7 @@ const AllTournaments = ({ navigation }) => {
           style={{ width: "99%" }}
           onChangeSearch={(text) => setquery(text)}
           searchQuery={query}
-          placeholder={'Search by Team Name'}
+          placeholder={"Search by Team Name"}
         />
         <ScrollView
           style={{ width: "100%" }}
@@ -77,18 +81,40 @@ const AllTournaments = ({ navigation }) => {
         >
           {data?.map((item, i) => (
             <View key={i} style={styles.card}>
-              <View style={{ ...FSTYLES}}>
+              <AppText size={1.5}>{item.entryFees}</AppText>
+              <View style={{ ...FSTYLES }}>
                 <AppText bold={true}>{item.firstTeamName}</AppText>
                 <AppText bold={true}>vs</AppText>
-                <AppText color={"red"}>{item.secondTeamName}</AppText>
+                <AppText color={COLORS.primary}>{item.secondTeamName}</AppText>
               </View>
-              <AppButton
-                onPress={() =>
-                  deleteMatch(item.id, getAllMatches(dispatch, setloading))
-                }
-                title={"Delete"}
-                style={{ width: "48%", backgroundColor: COLORS.gray }}
-              />
+              <View style={{ ...FSTYLES }}>
+                <AppText size={1.5}>{item.date}</AppText>
+                <AppText size={1.5}>{item.time}</AppText>
+                <AppText color={"red"} size={1.5}>
+                  {item.status}
+                </AppText>
+              </View>
+              <View style={{ ...FSTYLES }}>
+                <AppText size={1.5}>{item.eventLocation}</AppText>
+                <AppText size={1.5}>{item.eventName}</AppText>
+              </View>
+              <View style={{ ...FSTYLES }}>
+                <AppButton
+                  varient={"outlined"}
+                  borderColor={COLORS.red}
+                  onPress={() => deleteMatch(item.id, getMatch)}
+                  title={"Delete"}
+                  style={{ width: "48%" }}
+                />
+                <AppButton
+                  varient={"outlined"}
+                  onPress={() =>
+                    markItcomplete({ ...item, status: "completed" }, getMatch)
+                  }
+                  title={"Complete"}
+                  style={{ width: "48%" }}
+                />
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -112,7 +138,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: SIZES.base,
     width: "99%",
-    height: SIZES.height * 0.15,
+    height: SIZES.height * 0.23,
     justifyContent: "space-between",
     alignSelf: "center",
     marginVertical: 10,

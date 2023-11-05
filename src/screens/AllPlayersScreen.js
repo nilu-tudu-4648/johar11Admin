@@ -92,18 +92,21 @@ const AllPlayersScreen = ({ navigation }) => {
                   />
                 )}
                 <AppText bold={true}>{item.name}</AppText>
-                <AppText color={"red"}>{item.teamName}</AppText>
+                <AppText color={COLORS.primary}>{item.teamName}</AppText>
               </View>
               <View style={{ ...FSTYLES, width: "100%" }}>
                 <AppButton
+                  varient={"outlined"}
                   title={"Update"}
                   onPress={() => openDialog(item)}
                   style={{ width: "48%" }}
                 />
                 <AppButton
+                  varient={"outlined"}
+                  borderColor={COLORS.red}
                   onPress={() => deleteUser(item.id, callGetAllplayer)}
                   title={"Delete"}
-                  style={{ width: "48%", backgroundColor: COLORS.gray }}
+                  style={{ width: "48%" }}
                 />
               </View>
             </View>
