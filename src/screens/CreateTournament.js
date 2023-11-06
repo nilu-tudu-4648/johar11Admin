@@ -1,6 +1,6 @@
 import { StyleSheet, View, TouchableOpacity, BackHandler } from "react-native";
 import React, { useState } from "react";
-import { COLORS, SIZES } from "../constants/theme";
+import { COLORS, FSTYLES, SIZES, STYLES } from "../constants/theme";
 import { useForm } from "react-hook-form";
 import AppText from "../components/AppText";
 import FormInput from "../components/FormInput";
@@ -10,13 +10,20 @@ import { AppButton, AppTextInput } from "../components";
 import { addDoc, collection, updateDoc } from "firebase/firestore";
 import { ScrollView } from "react-native-gesture-handler";
 import { FIRESTORE_COLLECTIONS } from "../constants/data";
-
+import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { formatDate, formatTimestamp, showToast } from "../constants/functions";
+import {
+  formatDate,
+  formatTimestamp,
+  saveMediaToStorage,
+  showToast,
+} from "../constants/functions";
 import { NAVIGATION } from "../constants/routes";
+import { Avatar } from "react-native-paper";
 const CreateTournament = ({ navigation }) => {
   const [loading, setloading] = useState(false);
   const [date, setDate] = useState(new Date());
+  const [images, setimages] = useState({ captain1Pic: "", captain2Pic: "" });
   const [isStartTimePickerVisible, setIsStartTimePickerVisible] =
     useState(false);
   const [startTime, setStartTime] = useState(null);
@@ -34,6 +41,27 @@ const CreateTournament = ({ navigation }) => {
     const currentDate = selectedDate || startTime;
     setIsStartTimePickerVisible(false);
     setStartTime(currentDate);
+  };
+  const pickImage = async (type) => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        aspect: [4, 3],
+        quality: 0.1,
+        base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const urlParts = result.assets[0].uri;
+        const url = await saveMediaToStorage(
+          urlParts,
+          `/playersCaptain/${Math.random()}`
+        );
+        setimages({ ...images, [type]: url });
+        showToast("upload successfully");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
   const {
     control,
@@ -70,6 +98,7 @@ const CreateTournament = ({ navigation }) => {
 
       // Add the tournament data without the 'id' field
       const tournamentData = {
+        ...images,
         firstTeamName,
         secondTeamName,
         prizeAmount,
@@ -80,7 +109,7 @@ const CreateTournament = ({ navigation }) => {
         date: formatDate(date),
         time: formatTimestamp(startTime),
       };
-
+      console.log(tournamentData, "tournamentData");
       // Add the document to Firestore, Firestore will generate an ID
       const docRef = await addDoc(tournamentsCollectionRef, tournamentData);
 
@@ -134,6 +163,48 @@ const CreateTournament = ({ navigation }) => {
           {"Create Tournament"}
         </AppText>
         <View>
+          <View style={FSTYLES}>
+            <View style={{ ...STYLES, width: "45%" }}>
+              <TouchableOpacity
+                style={{ ...STYLES, marginVertical: SIZES.base }}
+                onPress={() => pickImage("captain1Pic")}
+              >
+                {images.captain1Pic ? (
+                  <Avatar.Image
+                    size={SIZES.largeTitle * 1.7}
+                    source={{ uri: images.captain1Pic }}
+                  />
+                ) : (
+                  <Avatar.Icon
+                    size={SIZES.largeTitle * 1.7}
+                    icon="account"
+                    style={{ backgroundColor: COLORS.gray }}
+                  />
+                )}
+              </TouchableOpacity>
+              <AppText>Captain 1</AppText>
+            </View>
+            <View style={{ ...STYLES, width: "45%" }}>
+              <TouchableOpacity
+                style={{ ...STYLES, marginVertical: SIZES.base }}
+                onPress={() => pickImage("captain2Pic")}
+              >
+                {images.captain2Pic ? (
+                  <Avatar.Image
+                    size={SIZES.largeTitle * 1.7}
+                    source={{ uri: images.captain2Pic }}
+                  />
+                ) : (
+                  <Avatar.Icon
+                    size={SIZES.largeTitle * 1.7}
+                    icon="account"
+                    style={{ backgroundColor: COLORS.gray }}
+                  />
+                )}
+              </TouchableOpacity>
+              <AppText>Captain 2</AppText>
+            </View>
+          </View>
           <FormInput
             control={control}
             rules={rules}

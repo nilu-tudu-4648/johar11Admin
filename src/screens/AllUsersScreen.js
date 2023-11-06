@@ -1,6 +1,7 @@
 import { BackHandler, ScrollView, StyleSheet, View } from "react-native";
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
+  AppButton,
   AppLoader,
   AppSearchBar,
   AppText,
@@ -8,9 +9,10 @@ import {
   HomeHeader,
 } from "../components";
 import { useDispatch, useSelector } from "react-redux";
-import { getAllUsers } from "../constants/functions";
+import { deleteUser, getAllUsers } from "../constants/functions";
 import { NAVIGATION } from "../constants/routes";
-import { FSTYLES } from "../constants/theme";
+import { FSTYLES, COLORS, SIZES } from "../constants/theme";
+import { Avatar } from "react-native-paper";
 const AllUsersScreen = ({ navigation }) => {
   const { allusers } = useSelector((state) => state.entities.adminReducer);
   const dispatch = useDispatch();
@@ -35,9 +37,9 @@ const AllUsersScreen = ({ navigation }) => {
       setData(allusers);
     }
   }, [query, allusers, filterFunction]);
-  const callGetAllplayer = () => getAllUsers(dispatch, setloading);
+  const callGetAllusers = () => getAllUsers(dispatch, setloading);
   useEffect(() => {
-    callGetAllplayer();
+    callGetAllusers();
   }, [dispatch]);
 
   useEffect(() => {
@@ -68,15 +70,36 @@ const AllUsersScreen = ({ navigation }) => {
         >
           {data.map((item, i) => (
             <View key={i} style={styles.card}>
-              <View>
-                <AppText size={1.6}>
-                  {item.firstName} {item.lastName}
-                </AppText>
-                <AppText size={1.5}>{item.mobile}</AppText>
+              {item.profilePic ? (
+                <Avatar.Image
+                  size={SIZES.largeTitle * 1.7}
+                  source={{ uri: item.profilePic }}
+                />
+              ) : (
+                <Avatar.Icon
+                  size={SIZES.largeTitle * 1.7}
+                  icon="account"
+                  style={{ backgroundColor: COLORS.gray }}
+                />
+              )}
+              <View style={FSTYLES}>
+                <View>
+                  <AppText size={1.6}>
+                    {item.firstName} {item.lastName}
+                  </AppText>
+                  <AppText size={1.5}>{item.mobile}</AppText>
+                </View>
+                <View>
+                  <AppText size={1.3}>{item.email}</AppText>
+                </View>
               </View>
-              <View>
-                <AppText size={1.3}>{item.email}</AppText>
-              </View>
+              <AppButton
+                varient={"outlined"}
+                borderColor={COLORS.red}
+                onPress={() => deleteUser(item.id, callGetAllusers)}
+                title={"Delete"}
+                style={{ width: "48%" }}
+              />
             </View>
           ))}
         </ScrollView>
@@ -89,7 +112,6 @@ export default AllUsersScreen;
 
 const styles = StyleSheet.create({
   card: {
-    ...FSTYLES,
     elevation: 2,
     backgroundColor: "white",
     borderRadius: 10,

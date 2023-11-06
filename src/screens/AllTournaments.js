@@ -16,11 +16,10 @@ import {
 } from "../constants/functions";
 import { NAVIGATION } from "../constants/routes";
 import { COLORS, FSTYLES, SIZES } from "../constants/theme";
+import { Image } from "react-native";
 const AllTournaments = ({ navigation }) => {
   const { allMatches } = useSelector((state) => state.entities.adminReducer);
   const [loading, setloading] = useState(true);
-  const [editPlayerVisible, seteditPlayerVisible] = useState(false);
-  const [editPlayerItem, seteditPlayerItem] = useState({});
   const [data, setData] = useState([]);
   const [query, setquery] = useState("");
   const dispatch = useDispatch();
@@ -60,10 +59,7 @@ const AllTournaments = ({ navigation }) => {
     },
     []
   );
-  const openDialog = (item) => {
-    seteditPlayerItem(item);
-    seteditPlayerVisible(true);
-  };
+
   return (
     <>
       <AppLoader loading={loading} />
@@ -81,11 +77,28 @@ const AllTournaments = ({ navigation }) => {
         >
           {data?.map((item, i) => (
             <View key={i} style={styles.card}>
-              <AppText size={1.5}>{item.entryFees}</AppText>
               <View style={{ ...FSTYLES }}>
-                <AppText bold={true}>{item.firstTeamName}</AppText>
+                <AppText size={1.5}>Entry: {item.entryFees}</AppText>
+                <AppText size={1.5}>Prize: {item.prizeAmount}</AppText>
+              </View>
+              <View style={{ ...FSTYLES }}>
+                <View>
+                  <Image
+                    source={{ uri: item.captain1Pic }}
+                    style={{ width: 50, height: 50 }}
+                  />
+                  <AppText bold={true}>{item.firstTeamName}</AppText>
+                </View>
                 <AppText bold={true}>vs</AppText>
-                <AppText color={COLORS.primary}>{item.secondTeamName}</AppText>
+                <View>
+                  <Image
+                    source={{ uri: item.captain2Pic }}
+                    style={{ width: 50, height: 50 }}
+                  />
+                  <AppText color={COLORS.primary}>
+                    {item.secondTeamName}
+                  </AppText>
+                </View>
               </View>
               <View style={{ ...FSTYLES }}>
                 <AppText size={1.5}>{item.date}</AppText>
@@ -138,7 +151,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: SIZES.base,
     width: "99%",
-    height: SIZES.height * 0.23,
     justifyContent: "space-between",
     alignSelf: "center",
     marginVertical: 10,

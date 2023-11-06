@@ -10,7 +10,7 @@ import {
   HomeHeader,
 } from "../components";
 import { useDispatch, useSelector } from "react-redux";
-import { getAllPlayers, deleteUser } from "../constants/functions";
+import { getAllPlayers, deletePlayers } from "../constants/functions";
 import { NAVIGATION } from "../constants/routes";
 import { COLORS, FSTYLES, SIZES } from "../constants/theme";
 import { Avatar } from "react-native-paper";
@@ -104,7 +104,7 @@ const AllPlayersScreen = ({ navigation }) => {
                 <AppButton
                   varient={"outlined"}
                   borderColor={COLORS.red}
-                  onPress={() => deleteUser(item.id, callGetAllplayer)}
+                  onPress={() => deletePlayers(item.id, callGetAllplayer)}
                   title={"Delete"}
                   style={{ width: "48%" }}
                 />

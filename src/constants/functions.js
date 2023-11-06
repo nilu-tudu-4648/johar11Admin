@@ -383,6 +383,14 @@ export const deleteTeam = async (id, func) => {
 };
 export const deleteUser = async (id, func) => {
   try {
+    await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.USERS, id));
+    if (func) func();
+  } catch (error) {
+    console.log(error);
+  }
+};
+export const deletePlayers = async (id, func) => {
+  try {
     await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.PLAYERS, id));
     if (func) func();
   } catch (error) {

@@ -38,8 +38,6 @@ const App = () => {
   // eas build -p android --profile preview
   // eas update --branch preview --message "Updating the app"
 
-  // eas build -p android --profile prod
-  // eas update --branch prod --message "Updating the app"
   // npx expo  start --dev-client
   return (
     <NavigationContainer>
