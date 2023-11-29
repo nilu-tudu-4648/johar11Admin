@@ -99,8 +99,8 @@ const CreateTournament = ({ navigation }) => {
       // Add the tournament data without the 'id' field
       const tournamentData = {
         ...images,
-        firstTeamName,
-        secondTeamName,
+        firstTeamName:firstTeamName.trim(),
+        secondTeamName:secondTeamName.trim(),
         prizeAmount,
         eventName,
         eventLocation,
@@ -110,7 +110,6 @@ const CreateTournament = ({ navigation }) => {
         time: formatTimestamp(startTime),
       };
       console.log(tournamentData, "tournamentData");
-      // Add the document to Firestore, Firestore will generate an ID
       const docRef = await addDoc(tournamentsCollectionRef, tournamentData);
 
       // Retrieve the auto-generated Firestore document ID

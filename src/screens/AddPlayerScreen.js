@@ -87,10 +87,9 @@ const AddPlayerScreen = ({ navigation }) => {
         FIRESTORE_COLLECTIONS.PLAYERS
       );
       await addDoc(playersCollectionRef, {
-        name,
+        name: name.trim(),
         points,
-        teamName,
-        tournamentName: "IPL",
+        teamName: teamName.trim(),
         playerPic: image,
         isActive: false,
         playerType: selectedOption,

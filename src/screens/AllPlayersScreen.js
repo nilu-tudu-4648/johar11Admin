@@ -1,4 +1,4 @@
-import { BackHandler, ScrollView, StyleSheet, View, Image } from "react-native";
+import { BackHandler, ScrollView, StyleSheet, View, } from "react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AppButton,
@@ -78,7 +78,7 @@ const AllPlayersScreen = ({ navigation }) => {
         >
           {data?.map((item, i) => (
             <View key={i} style={styles.card}>
-              <View style={{ ...FSTYLES, width: "100%" }}>
+              <View style={{ ...FSTYLES }}>
                 {item.playerPic ? (
                   <Avatar.Image
                     size={SIZES.largeTitle * 1.7}
@@ -91,8 +91,16 @@ const AllPlayersScreen = ({ navigation }) => {
                     style={{ backgroundColor: COLORS.gray }}
                   />
                 )}
-                <AppText bold={true}>{item.name}</AppText>
-                <AppText color={COLORS.primary}>{item.teamName}</AppText>
+                <View style={{ width: "60%", alignItems: "center" }}>
+                  <AppText bold={true}>{item.name}</AppText>
+                  <AppText color={COLORS.primary}>{item.teamName}</AppText>
+                </View>
+                <View style={{ width: "20%" }}>
+                  <AppText size={1.6}>{item.playerType}</AppText>
+                  <AppText color={COLORS.green} size={1.6}>
+                    {item.points}
+                  </AppText>
+                </View>
               </View>
               <View style={{ ...FSTYLES, width: "100%" }}>
                 <AppButton
