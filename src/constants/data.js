@@ -39,4 +39,5 @@ export const FIRESTORE_COLLECTIONS = {
   PLAYERS: "players",
   TEAM_NAMES: "teamNames",
   TOURNAMENTS: "tournaments",
+  PRIZE_DISTRIBUTE:"prizeDistribute"
 };

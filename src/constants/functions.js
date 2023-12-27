@@ -13,6 +13,8 @@ import {
   updateDoc,
   where,
   onSnapshot,
+  setDoc,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import {
@@ -355,6 +357,55 @@ export const getAllUsers = async (dispatch, func) => {
     func(false);
   } catch (error) {
     console.log(error);
+  }
+};
+export const getCreatedteamsbymatchId = async (func, matchId) => {
+  try {
+    const q = query(
+      collection(db, FIRESTORE_COLLECTIONS.CREATED_TEAMS),
+      where("matchId", "==", matchId)
+    );
+    const querySnapshot = await getDocs(q);
+    let arr = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const id = doc.id;
+      return arr.push({ id, ...data });
+    });
+    const result = await getPrizeDistribution(matchId,func);
+    if (!result) {
+      const names = arr.map((ite) => ({
+        name: ite.userName,
+        prizeAmount: "0",
+      }));
+      await saveToFirebase(names, matchId);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+export const getPrizeDistribution = async (matchId,func) => {
+  try {
+    const docRef = doc(db, FIRESTORE_COLLECTIONS.PRIZE_DISTRIBUTE, matchId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      func(docSnap.data().names);
+      return true;
+    } else {
+      console.log("No such document!");
+      return false;
+    }
+  } catch (error) {
+    console.log("Error:", error);
+  }
+};
+export const saveToFirebase = async (names, matchId) => {
+  try {
+    await setDoc(doc(db, FIRESTORE_COLLECTIONS.PRIZE_DISTRIBUTE, matchId), {
+      names: names,
+    });
+  } catch (error) {
+    console.log("Error:", error);
   }
 };
 export const getAllTeams = async (dispatch, func) => {

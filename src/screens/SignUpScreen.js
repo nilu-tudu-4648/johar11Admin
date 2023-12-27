@@ -6,7 +6,7 @@ import AppText from "../components/AppText";
 import FormInput from "../components/FormInput";
 import AppLoader from "../components/AppLoader";
 import { db } from "../../firebaseConfig";
-import { AppButton, RedStar } from "../components";
+import { AppButton } from "../components";
 import {
   addDoc,
   collection,

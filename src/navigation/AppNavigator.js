@@ -16,6 +16,7 @@ import {
   CreateTournament,
   LoginScreen,
   PointsSystemScreen,
+  PriceDistributionScreen,
   ProfileScreen,
   SignUpScreen,
   WelcomeScreen,
@@ -108,6 +109,11 @@ function AppNavigator() {
                 options={options}
                 name={NAVIGATION.PROFILE}
                 component={ProfileScreen}
+              />
+              <Stack.Screen
+                options={options}
+                name={NAVIGATION.PRIZE_DISTRIBUTION}
+                component={PriceDistributionScreen}
               />
             </>
           ) : (

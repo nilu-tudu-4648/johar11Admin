@@ -1,4 +1,4 @@
-import { BackHandler, ScrollView, StyleSheet, View } from "react-native";
+import { BackHandler, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AppButton,
@@ -76,25 +76,31 @@ const AllTournaments = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           {data?.map((item, i) => (
-            <View key={i} style={styles.card}>
-              <View style={{ ...FSTYLES }}>
+            <TouchableOpacity key={i} onPress={()=>navigation.navigate(NAVIGATION.PRIZE_DISTRIBUTION,{item})} style={{...styles.card,backgroundColor:item.isTesting?'gray':'white' }}>
+              <View style={{ ...FSTYLES}}>
                 <AppText size={1.5}>Entry: {item.entryFees}</AppText>
                 <AppText size={1.5}>Prize: {item.prizeAmount}</AppText>
               </View>
               <View style={{ ...FSTYLES }}>
                 <View>
+                {
+                  item.captain1Pic?
                   <Image
-                    source={{ uri: item.captain1Pic }}
-                    style={{ width: 50, height: 50 }}
-                  />
+                  source={{ uri: item.captain1Pic }}
+                  style={{ width: 50, height: 50 }}
+                /> : <View style={{ width: 50, height: 50,backgroundColor:'red' }}/>
+                }
                   <AppText bold={true}>{item.firstTeamName}</AppText>
                 </View>
                 <AppText bold={true}>vs</AppText>
                 <View>
+                {
+                  item.captain2Pic?
                   <Image
-                    source={{ uri: item.captain2Pic }}
-                    style={{ width: 50, height: 50 }}
-                  />
+                  source={{ uri: item.captain2Pic }}
+                  style={{ width: 50, height: 50 }}
+                /> : <View style={{ width: 50, height: 50,backgroundColor:'green' }}/>
+                }
                   <AppText color={COLORS.primary}>
                     {item.secondTeamName}
                   </AppText>
@@ -128,7 +134,7 @@ const AllTournaments = ({ navigation }) => {
                   style={{ width: "48%" }}
                 />
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
         {/* <EditPlayerDialog
@@ -147,7 +153,6 @@ export default AllTournaments;
 const styles = StyleSheet.create({
   card: {
     elevation: 2,
-    backgroundColor: "white",
     borderRadius: 10,
     padding: SIZES.base,
     width: "99%",

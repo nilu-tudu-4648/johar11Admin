@@ -76,6 +76,7 @@ const CreateTournament = ({ navigation }) => {
       eventName: "",
       eventLocation: "",
       entryFees: "",
+      isTesting:'false'
     },
   });
   const onSubmit = async (data) => {
@@ -87,6 +88,7 @@ const CreateTournament = ({ navigation }) => {
       eventLocation,
       entryFees,
       eventType,
+      isTesting
     } = data;
 
     try {
@@ -106,6 +108,7 @@ const CreateTournament = ({ navigation }) => {
         eventLocation,
         entryFees,
         eventType,
+        isTesting,
         date: formatDate(date),
         time: formatTimestamp(startTime),
       };
@@ -126,6 +129,7 @@ const CreateTournament = ({ navigation }) => {
       setValue("eventLocation", "");
       setValue("entryFees", "");
       setValue("eventType", "");
+      setValue("isTesting", "false");
       navigation.navigate(NAVIGATION.ADMIN_HOME);
     } catch (error) {
       console.error("Error adding tournament:", error);
@@ -263,6 +267,16 @@ const CreateTournament = ({ navigation }) => {
             }}
             placeholder={"Add event Type"}
             name="eventType"
+          />
+        </View>
+        <View>
+          <FormInput
+            control={control}
+            rules={{
+              required: "This field is mandatory",
+            }}
+            placeholder={"is Testing"}
+            name="isTesting"
           />
         </View>
         <View style={{ marginBottom: SIZES.base }}>
