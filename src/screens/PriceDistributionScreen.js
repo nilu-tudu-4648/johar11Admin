@@ -13,7 +13,7 @@ const PriceDistributionScreen = ({ route }) => {
   const [data, setData] = useState("");
   const callGetAllcreatedTeams = async () => {
     try {
-      await getCreatedteamsbymatchId(setNames, item.id);
+      await getCreatedteamsbymatchId(setNames, item.id,true);
     } catch (error) {
       // Handle error
     }

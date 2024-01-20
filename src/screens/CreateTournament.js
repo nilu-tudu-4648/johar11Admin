@@ -124,7 +124,6 @@ const CreateTournament = ({ navigation }) => {
         time: formatTimestamp(startTime),
         dateAndTime:combineDateAndTime(date,startTime)
       };
-      console.log(tournamentData, "tournamentData");
       const docRef = await addDoc(tournamentsCollectionRef, tournamentData);
 
       // Retrieve the auto-generated Firestore document ID

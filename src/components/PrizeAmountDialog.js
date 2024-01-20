@@ -5,9 +5,6 @@ import { Dialog } from "react-native-paper";
 import AppText from "./AppText";
 import AppTextInput from "./AppTextInput";
 import AppButton from "./AppButton";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "../../firebaseConfig";
-import { FIRESTORE_COLLECTIONS } from "../constants/data";
 import { getCreatedteamsbymatchId, saveToFirebase, showToast } from "../constants/functions";
 const PrizeAmountDialog = ({ visible, setvisible, item,matchId,names,setNames }) => {
   const [itemSelected, setitemSelected] = useState(item);
@@ -20,7 +17,7 @@ const PrizeAmountDialog = ({ visible, setvisible, item,matchId,names,setNames })
     try {
       const addItem = names.map(ite=>ite.name===itemSelected.name? {...ite,prizeAmount:itemSelected.prizeAmount}:ite)
      await saveToFirebase(addItem,matchId)
-     await getCreatedteamsbymatchId(setNames,matchId);
+     await getCreatedteamsbymatchId(setNames,matchId,true);
      showToast("Prize updated")
      setvisible(false)
     } catch (error) {
