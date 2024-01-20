@@ -42,7 +42,18 @@ const CreateTournament = ({ navigation }) => {
     setIsStartTimePickerVisible(false);
     setStartTime(currentDate);
   };
-  const pickImage = async (type) => {
+  const combineDateAndTime = (date, time) => {
+    // Format date to YYYY-MM-DD
+    const formattedDate = date.toISOString().split('T')[0];
+  
+    // Format time to HH:mm:ss.000Z
+    const formattedTime = time.toISOString().split('T')[1];
+  
+    // Combine date and time
+    return `${formattedDate}T${formattedTime}`;
+  };
+  
+ const pickImage = async (type) => {
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -111,6 +122,7 @@ const CreateTournament = ({ navigation }) => {
         isTesting,
         date: formatDate(date),
         time: formatTimestamp(startTime),
+        dateAndTime:combineDateAndTime(date,startTime)
       };
       console.log(tournamentData, "tournamentData");
       const docRef = await addDoc(tournamentsCollectionRef, tournamentData);

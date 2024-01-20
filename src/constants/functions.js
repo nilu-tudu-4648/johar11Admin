@@ -49,35 +49,42 @@ export const truncateString = (inputString, maxLength) => {
   }
   return inputString;
 };
-export const formatDate = (timestamp) => {
-  const truncatedTimestamp = Math.floor(timestamp / 1000); // Remove milliseconds
-
-  const date = new Date(truncatedTimestamp * 1000); // Convert to milliseconds
-
-  // Extract the day, month, and year components
-  const day = date.getDate().toString().padStart(2, "0");
-  const month = (date.getMonth() + 1).toString().padStart(2, "0"); // Add 1 to month since it is zero-based
-  const year = date.getFullYear().toString(); // Get the last two digits of the year
-
-  // Return the formatted date with AM/PM indicator in ddmmyy format
-  return `${day}/${month}/${year}`;
+export const formatDate = (date) => {
+  const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
+  return date.toLocaleDateString(undefined, options);
 };
+export function convertToISOString(inputDate) {
+  // Split the input date string into date and time parts
+  const [datePart, timePart] = inputDate.split(' ');
+
+  // Split the date part into day, month, and year
+  const [day, month, year] = datePart.split('/');
+
+  // Extract hours, minutes, and AM/PM from the time part
+  const [time, period] = timePart.split(' ');
+  const [hours, minutes] = time.split(':');
+
+  // Adjust hours for 12-hour format
+  const adjustedHours = period === 'PM' ? parseInt(hours, 10) + 12 : parseInt(hours, 10);
+
+  // Create a new Date object with the specified components
+  const convertedDate = new Date(`${year}-${month}-${day}T${adjustedHours}:${minutes}:00.000Z`);
+
+  // Convert the date to ISO string
+  const isoString = convertedDate.toISOString();
+
+  return isoString;
+}
+
+
+
 export const formatTimestamp = (timestamp) => {
-  const truncatedTimestamp = Math.floor(timestamp / 1000); // Remove milliseconds
+  if (!timestamp) return '';
+  
+  const options = { hour: '2-digit', minute: '2-digit', hour12: false };
+  const timeString = timestamp.toLocaleTimeString(undefined, options);
 
-  const date = new Date(truncatedTimestamp * 1000); // Convert to milliseconds
-
-  // Extract the hours, minutes, and AM/PM indicator
-  let hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? "PM" : "AM";
-
-  // Convert hours to 12-hour format
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-
-  // Return the formatted date with AM/PM indicator in ddmmyy format
-  return `${hours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  return timeString;
 };
 export const sanitizeJsonString = (jsonString) => {
   // Remove any characters that are not part of a valid JSON format

@@ -149,7 +149,9 @@ const AddPlayerScreen = ({ navigation }) => {
         <View>
           <FormInput
             control={control}
-            rules={rules}
+            rules={{
+              required: "This field is mandatory",
+            }}
             placeholder={"Player name"}
             name="name"
           />
