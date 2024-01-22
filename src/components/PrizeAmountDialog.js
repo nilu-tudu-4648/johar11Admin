@@ -15,7 +15,7 @@ const PrizeAmountDialog = ({ visible, setvisible, item,matchId,names,setNames })
   const filterKeys = Object.keys(itemSelected)
   const handleSubmit = async () => {
     try {
-      const addItem = names.map(ite=>ite.name===itemSelected.name? {...ite,prizeAmount:itemSelected.prizeAmount}:ite)
+      const addItem = names.map(ite=>ite.id===itemSelected.id? {...ite,prizeAmount:itemSelected.prizeAmount,name:itemSelected.name}:ite)
      await saveToFirebase(addItem,matchId)
      await getCreatedteamsbymatchId(setNames,matchId,true);
      showToast("Prize updated")
@@ -37,7 +37,7 @@ const PrizeAmountDialog = ({ visible, setvisible, item,matchId,names,setNames })
         <AppText bold={true} style={{ bottom: 10 }}>
           {"Update Player Prize"}
         </AppText>
-        {filterKeys.map((ite, i) => (
+        {filterKeys.filter(ite=>ite!=='id').map((ite, i) => (
           <View key={i}>
             <AppText size={1.5}>{ite}</AppText>
             <AppTextInput

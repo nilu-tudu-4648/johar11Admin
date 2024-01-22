@@ -368,33 +368,18 @@ export const getAllUsers = async (dispatch, func) => {
 };
 export const getCreatedteamsbymatchId = async (func, matchId,update) => {
   try {
-    const q = query(
-      collection(db, FIRESTORE_COLLECTIONS.CREATED_TEAMS),
-      where("matchId", "==", matchId)
-    );
-    const querySnapshot = await getDocs(q);
-    let arr = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const id = doc.id;
-      return arr.push({ id, ...data });
-    });
-    if(!arr.length){
+    const docRef = doc(db, FIRESTORE_COLLECTIONS.PRIZE_DISTRIBUTE, matchId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      func(docSnap.data().names);
+    } else {
       const names = ['1','2','3','4','5','6','7','8','9','10'].map((ite) => ({
+        id:ite,
         name: ite,
         prizeAmount: "0",
       }));
     if(!update)  await saveToFirebase(names, matchId);
       await getPrizeDistribution(matchId,func);
-    }else{
-      const result = await getPrizeDistribution(matchId,func);
-      if (!result) {
-        const names = arr.map((ite) => ({
-          name: ite|| ite.userName,
-          prizeAmount: "0",
-        }));
-      if(!update)  await saveToFirebase(names, matchId);
-      }
     }
   } catch (error) {
     console.log(error);

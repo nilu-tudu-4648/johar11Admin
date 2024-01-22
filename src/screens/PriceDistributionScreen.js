@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, View, StyleSheet, TouchableOpacity } from "react-native";
+import { FlatList, View, StyleSheet, TouchableOpacity, BackHandler } from "react-native";
 import { AppSearchBar, AppText, AppView, PrizeAmountDialog } from "../components";
 import { getCreatedteamsbymatchId } from "../constants/functions";
 import { FSTYLES, SIZES } from "../constants/theme";
+import { NAVIGATION } from "../constants/routes";
 
-const PriceDistributionScreen = ({ route }) => {
+const PriceDistributionScreen = ({ route,navigation }) => {
   const { item } = route.params;
   const [names, setNames] = useState([]);
   const [dialogVisible, setdialogVisible] = useState(false);
@@ -13,7 +14,7 @@ const PriceDistributionScreen = ({ route }) => {
   const [data, setData] = useState("");
   const callGetAllcreatedTeams = async () => {
     try {
-      await getCreatedteamsbymatchId(setNames, item.id,true);
+      await getCreatedteamsbymatchId(setNames, item.id);
     } catch (error) {
       // Handle error
     }
@@ -54,6 +55,14 @@ const PriceDistributionScreen = ({ route }) => {
   useEffect(() => {
     filterData();
   }, [query, names, filterFunction, filterData]);
+  BackHandler.addEventListener(
+    "hardwareBackPress",
+    () => {
+      navigation.navigate( NAVIGATION.ALL_TOURNAMENTS);
+      return () => true;
+    },
+    []
+  );
   return (
     <AppView>
            <AppSearchBar

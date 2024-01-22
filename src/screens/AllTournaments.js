@@ -76,7 +76,7 @@ const AllTournaments = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           {data?.map((item, i) => (
-            <TouchableOpacity key={i} onPress={()=>navigation.navigate(NAVIGATION.PRIZE_DISTRIBUTION,{item})} style={{...styles.card,backgroundColor:item.isTesting?'gray':'white' }}>
+            <TouchableOpacity key={i} onPress={()=>navigation.navigate(NAVIGATION.PRIZE_DISTRIBUTION,{item})} style={{...styles.card,backgroundColor:item.isTesting==='true' ?'gray':'white' }}>
               <View style={{ ...FSTYLES}}>
                 <AppText size={1.5}>Entry: {item.entryFees}</AppText>
                 <AppText size={1.5}>Prize: {item.prizeAmount}</AppText>
