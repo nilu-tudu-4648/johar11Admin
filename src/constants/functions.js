@@ -373,9 +373,14 @@ export const getCreatedteamsbymatchId = async (func, matchId,update) => {
     if (docSnap.exists()) {
       func(docSnap.data().names);
     } else {
-      const names = ['1','2','3','4','5','6','7','8','9','10'].map((ite) => ({
-        id:ite,
-        name: ite,
+      // const names = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'].map((ite) => ({
+      //   id:ite,
+      //   name: ite,
+      //   prizeAmount: "0",
+      // }));
+      const names = Array.from({ length: 20 }, (_, i) => ({
+        id: `${i + 1}`,
+        name: `${i + 1}`,
         prizeAmount: "0",
       }));
     if(!update)  await saveToFirebase(names, matchId);

@@ -38,7 +38,6 @@ const AllTeamsScreen = ({ navigation }) => {
           {allTeams.map((item, i) => (
             <View key={i} style={styles.card}>
               <View>
-                <AppText size={1}>{item.id}</AppText>
                 <AppText size={2}>{item.teamName}</AppText>
               </View>
               <MaterialIcons
