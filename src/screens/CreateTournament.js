@@ -122,7 +122,8 @@ const CreateTournament = ({ navigation }) => {
         isTesting,
         date: formatDate(date),
         time: formatTimestamp(startTime),
-        dateAndTime:combineDateAndTime(date,startTime)
+        dateAndTime:combineDateAndTime(date,startTime),
+        createdAt:new Date()
       };
       const docRef = await addDoc(tournamentsCollectionRef, tournamentData);
 
