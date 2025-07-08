@@ -1,4 +1,4 @@
-import { BackHandler, ScrollView, StyleSheet, View } from "react-native";
+import { BackHandler, ScrollView, StyleSheet, View, Platform } from "react-native";
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   AppButton,
@@ -9,34 +9,55 @@ import {
   HomeHeader,
 } from "../components";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteUser, getAllUsers } from "../constants/functions";
+import { deleteUser, getAllUsers, formatDate } from "../constants/functions";
 import { NAVIGATION } from "../constants/routes";
 import { FSTYLES, COLORS, SIZES } from "../constants/theme";
 import { Avatar } from "react-native-paper";
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 const AllUsersScreen = ({ navigation }) => {
   const { allusers } = useSelector((state) => state.entities.adminReducer);
   const dispatch = useDispatch();
   const [loading, setloading] = useState(true);
   const [query, setquery] = useState("");
   const [data, setData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const isSameDay = (d1, d2) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+
   const filterFunction = useMemo(() => {
     return (item) => {
       const lowercaseQuery = query.toLowerCase();
-      return (
+      const matchesSearch =
         item.firstName?.toLowerCase().includes(lowercaseQuery) ||
-        item.mobile?.toLowerCase().includes(lowercaseQuery)
-      );
+        item.mobile?.toLowerCase().includes(lowercaseQuery);
+
+      if (!selectedDate) return matchesSearch;
+
+      if (!item.dateJoined) return false;
+
+      const itemDate = new Date(item.dateJoined);
+      const matchesDate = isSameDay(itemDate, selectedDate);
+
+      return matchesSearch && matchesDate;
     };
-  }, [query]);
+  }, [query, selectedDate]);
 
   const filterData = useCallback(() => {
-    if (query) {
-      const filteredData = allusers.filter(filterFunction);
-      setData(filteredData);
-    } else {
-      setData(allusers);
-    }
-  }, [query, allusers, filterFunction]);
+    const sorted = [...allusers].sort((a, b) => {
+      const dateA = a.dateJoined ? new Date(a.dateJoined) : new Date(0);
+      const dateB = b.dateJoined ? new Date(b.dateJoined) : new Date(0);
+      return dateB - dateA;
+    });
+
+    const finalData = sorted.filter(filterFunction);
+    setData(finalData);
+  }, [allusers, filterFunction]);
+
   const callGetAllusers = () => getAllUsers(dispatch, setloading);
   useEffect(() => {
     callGetAllusers();
@@ -44,7 +65,8 @@ const AllUsersScreen = ({ navigation }) => {
 
   useEffect(() => {
     filterData();
-  }, [query, allusers, filterFunction, filterData]);
+  }, [query, selectedDate, allusers, filterFunction, filterData]);
+
   BackHandler.addEventListener(
     "hardwareBackPress",
     () => {
@@ -64,6 +86,35 @@ const AllUsersScreen = ({ navigation }) => {
           searchQuery={query}
           placeholder={"Search by Name or Mobile"}
         />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginVertical: 10 }}>
+          <AppButton
+            varient={"outlined"}
+            title={selectedDate ? selectedDate.toLocaleDateString() : "Select Date"}
+            onPress={() => setShowDatePicker(true)}
+            style={{ width: selectedDate ? '48%' : '100%' }}
+          />
+          {selectedDate && (
+            <AppButton
+              varient={"outlined"}
+              title={"Clear"}
+              onPress={() => setSelectedDate(null)}
+              style={{ width: '48%' }}
+            />
+          )}
+        </View>
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(event, date) => {
+              setShowDatePicker(false);
+              if (event.type === 'set') {
+                setSelectedDate(date);
+              }
+            }}
+          />
+        )}
         <ScrollView
           style={{ width: "100%" }}
           showsVerticalScrollIndicator={false}
@@ -91,6 +142,11 @@ const AllUsersScreen = ({ navigation }) => {
                 </View>
                 <View>
                   <AppText size={1.3}>{item.email}</AppText>
+                  {item.dateJoined && (
+                    <AppText size={1.2} color={COLORS.gray}>
+                      Joined: {formatDate(new Date(item.dateJoined))}
+                    </AppText>
+                  )}
                 </View>
               </View>
               <AppButton
