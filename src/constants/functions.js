@@ -57,8 +57,11 @@ export const formatTime24Hour = (date) => {
   return `${hours}:${minutes}`;
 };
 export const formatDate = (date) => {
-  const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
-  return date.toLocaleDateString(undefined, options);
+  if (!date) return '';
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 };
 export function convertToISOString(inputDate) {
   // Split the input date string into date and time parts
