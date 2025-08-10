@@ -6,7 +6,7 @@ import AppText from "./AppText";
 import AppTextInput from "./AppTextInput";
 import AppButton from "./AppButton";
 
-import { formatDate, formatTimestamp, saveMediaToStorage, showToast, updateTournament } from "../constants/functions";
+import { formatDate, formatTimestamp, formatTime24Hour, saveMediaToStorage, showToast, updateTournament } from "../constants/functions";
 import { ScrollView } from "react-native-gesture-handler";
 import { Avatar } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
@@ -41,10 +41,17 @@ const EditTournamentDialog = ({ visible, setvisible, item, callGetAllMatches }) 
     setStartTime(currentDate);
   };
 
-  const combineDateAndTime = (date, time) => {
-    const formattedDate = date.toISOString().split('T')[0];
-    const formattedTime = time.toISOString().split('T')[1];
-    return `${formattedDate}T${formattedTime}`;
+  // Create consistent dateAndTime in ISO format using local date/time
+  const createDateAndTime = (date, time) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+    const hours = time.getHours();
+    const minutes = time.getMinutes();
+    
+    // Create a date object in local time zone
+    const combinedDate = new Date(year, month, day, hours, minutes);
+    return combinedDate.toISOString();
   };
 
   const pickImage = async (type) => {
@@ -76,9 +83,15 @@ const EditTournamentDialog = ({ visible, setvisible, item, callGetAllMatches }) 
         ...(itemSelected || {}),
         ...images,
         date: formatDate(date),
-        time: formatTimestamp(startTime),
-        dateAndTime: combineDateAndTime(date, startTime),
+        time: formatTime24Hour(startTime), // Use 24-hour format consistently
+        dateAndTime: createDateAndTime(date, startTime), // Create consistent ISO format
       };
+
+      console.log('Updating tournament with data:', {
+        date: updatedData.date,
+        time: updatedData.time,
+        dateAndTime: updatedData.dateAndTime
+      });
 
       await updateTournament(updatedData, () => {
         showToast("Tournament details updated");
@@ -109,10 +122,25 @@ const EditTournamentDialog = ({ visible, setvisible, item, callGetAllMatches }) 
       }
       
       if (item?.time) {
-        // Parse time string "HH:MM" format
-        const [hours, minutes] = item.time.split(":");
+        // Handle both 24-hour format (HH:MM) and 12-hour format (HH:MM AM/PM)
+        let hours, minutes;
+        if (item.time.includes("AM") || item.time.includes("PM")) {
+          // 12-hour format with AM/PM
+          const [time, amPm] = item.time.split(" ");
+          [hours, minutes] = time.split(":").map(Number);
+          
+          if (amPm === "PM" && hours !== 12) {
+            hours += 12;
+          } else if (amPm === "AM" && hours === 12) {
+            hours = 0;
+          }
+        } else {
+          // 24-hour format
+          [hours, minutes] = item.time.split(":").map(Number);
+        }
+        
         const timeDate = new Date();
-        timeDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        timeDate.setHours(hours, minutes, 0, 0);
         setStartTime(timeDate);
       }
     } else {
@@ -211,7 +239,7 @@ const EditTournamentDialog = ({ visible, setvisible, item, callGetAllMatches }) 
             <TouchableOpacity onPress={() => setShow(true)}>
               <AppTextInput
                 editable={false}
-                value={`${formatDate(date)} ${formatTimestamp(startTime)}`}
+                value={`${formatDate(date)} ${formatTime24Hour(startTime)}`}
               />
             </TouchableOpacity>
           </View>

@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform, ToastAndroid } from "react-native";
-import axios from "axios";
 import { setLoginUser, settournaments } from "../store/userReducer";
 import { FIRESTORE_COLLECTIONS } from "./data";
 import { setcreatePlayers, setleaderBoard } from "../store/playersReducer";
@@ -15,6 +14,8 @@ import {
   onSnapshot,
   setDoc,
   getDoc,
+  getFirestore,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import {
@@ -48,6 +49,12 @@ export const truncateString = (inputString, maxLength) => {
     return inputString.substring(0, maxLength) + "...";
   }
   return inputString;
+};
+export const formatTime24Hour = (date) => {
+  if (!date) return '';
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
 };
 export const formatDate = (date) => {
   const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
@@ -472,15 +479,49 @@ export const markItcomplete = async (fdata, func) => {
     console.log(error);
   }
 };
-export const updateTournament = async (fdata, func) => {
+// export const updateTournament = async (fdata, func) => {
+//   try {
+//     const postRef = doc(db, FIRESTORE_COLLECTIONS.TOURNAMENTS, fdata.id);
+//     await updateDoc(postRef, fdata).then(async () => {
+//       if (func) func();
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     throw error;
+//   }
+// };
+export const updateTournament = async (tournamentData, callback) => {
   try {
-    const postRef = doc(db, FIRESTORE_COLLECTIONS.TOURNAMENTS, fdata.id);
-    await updateDoc(postRef, fdata).then(async () => {
-      if (func) func();
+    if (!tournamentData.id) {
+      console.error('Error updating tournament: Missing document ID');
+      showToast('Tournament data is incomplete');
+      return;
+    }
+
+    const tournamentRef = doc(db, FIRESTORE_COLLECTIONS.TOURNAMENTS, tournamentData.id);
+
+    // Check if the document exists
+    const docSnapshot = await getDoc(tournamentRef);
+    if (!docSnapshot.exists) {
+      console.error('Error updating tournament: Document not found');
+      showToast('Tournament not found');
+      return;
+    }
+
+    // Update the document
+    await updateDoc(tournamentRef, {
+      ...tournamentData,
+      updatedAt: serverTimestamp()
     });
+    
+    if (callback) {
+      callback();
+    }
+    
+    showToast('Tournament updated successfully');
   } catch (error) {
-    console.log(error);
-    throw error;
+    console.error('Error updating tournament:', error);
+    showToast('Failed to update tournament');
   }
 };
 export const getAllPlayers = async (dispatch, func) => {
