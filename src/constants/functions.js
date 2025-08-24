@@ -36,7 +36,7 @@ export const logoutUser = async (dispatch) => {
     dispatch(setLoginUser(null));
     await AsyncStorage.clear();
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 
@@ -117,21 +117,11 @@ export const saveMediaToStorage = async (file, path) => {
       uploadTask.on(
         "state_changed",
         (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log("Upload is " + progress + "% done");
-          switch (snapshot.state) {
-            case "paused":
-              console.log("Upload is paused");
-              break;
-            case "running":
-              console.log("Upload is running");
-              break;
-          }
+          // Removed console.log for better performance
+          // const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         },
         (error) => {
           // Handle unsuccessful uploads
-          console.log(error);
           showToast("upload Failed");
           rej(error);
         },
@@ -144,7 +134,6 @@ export const saveMediaToStorage = async (file, path) => {
     });
     return url; // Return the download URL
   } catch (error) {
-    console.log(error);
     throw error; // Rethrow the error for handling in your app
   }
 };
@@ -170,7 +159,7 @@ export const updateUser = async (fdata, dispatch) => {
       dispatch(setLoginUser(fdata));
     });
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export function filterUpcomingEvents(events) {
@@ -258,47 +247,56 @@ export const getTournaments = async (dispatch, setloading) => {
     // Create a query for the tournaments collection
     const q = query(collection(db, FIRESTORE_COLLECTIONS.TOURNAMENTS));
 
+    // Function to process data and convert Firebase Timestamps
+    const processData = (data) => {
+      const processedData = { ...data };
+      Object.keys(processedData).forEach(key => {
+        const value = processedData[key];
+        // Check if value is a Firebase Timestamp
+        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+          processedData[key] = new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+        }
+      });
+      return processedData;
+    };
+
     // Fetch the initial data
     const querySnapshot = await getDocs(q);
     let arr = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const id = doc.id;
-      return arr.push({ id, ...data });
+      const processedData = processData(data);
+      return arr.push({ id, ...processedData });
     });
 
     // Set the initial data
-    const upcomingEvents = e(arr);
+    const upcomingEvents = filterUpcomingEvents(arr);
     dispatch(settournaments(upcomingEvents));
-
-    // Set up a listener for live updates
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          // Handle added data
-          const data = change.doc.data();
-          console.log("Added data: ", data);
-        } else if (change.type === "modified") {
-          // Handle modified data
-          const data = change.doc.data();
-          console.log("Modified data: ", data);
-        } else if (change.type === "removed") {
-          // Handle removed data
-          console.log("Removed data ID: ", change.doc.id);
-        }
-      });
-    });
-
-    // When you want to stop listening for updates
-    // Call the `unsubscribe` function
-    // For example, to stop listening when the component unmounts
-    // unsubscribe();
 
     if (setloading) {
       setloading(false);
     }
+
+    // Return unsubscribe function for cleanup
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let updatedArr = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const id = doc.id;
+        const processedData = processData(data);
+        updatedArr.push({ id, ...processedData });
+      });
+      const upcomingEvents = filterUpcomingEvents(updatedArr);
+      dispatch(settournaments(upcomingEvents));
+    });
+
+    return unsubscribe; // Return for cleanup
   } catch (error) {
-    console.log(error);
+    if (setloading) {
+      setloading(false);
+    }
+    return null;
   }
 };
 export const getLeaderBoard = async (dispatch, id, setloading) => {
@@ -312,14 +310,25 @@ export const getLeaderBoard = async (dispatch, id, setloading) => {
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const id = doc.id;
-      return arr.push({ id, ...data });
+      
+      // Convert Firebase Timestamps to ISO strings for Redux serialization
+      const processedData = { ...data };
+      Object.keys(processedData).forEach(key => {
+        const value = processedData[key];
+        // Check if value is a Firebase Timestamp
+        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+          processedData[key] = new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+        }
+      });
+      
+      return arr.push({ id, ...processedData });
     });
     dispatch(setleaderBoard(arr));
     if (setloading) {
       setloading(false);
     }
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const getPlayersfromTeamName = async (
@@ -329,6 +338,20 @@ export const getPlayersfromTeamName = async (
 ) => {
   try {
     const arr = [];
+    
+    // Function to process data and convert Firebase Timestamps
+    const processData = (data) => {
+      const processedData = { ...data };
+      Object.keys(processedData).forEach(key => {
+        const value = processedData[key];
+        // Check if value is a Firebase Timestamp
+        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+          processedData[key] = new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+        }
+      });
+      return processedData;
+    };
+    
     const q = query(
       collection(db, FIRESTORE_COLLECTIONS.PLAYERS),
       where("teamName", "==", firstTeamName)
@@ -337,7 +360,8 @@ export const getPlayersfromTeamName = async (
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const id = doc.id;
-      arr.push({ id, ...data });
+      const processedData = processData(data);
+      arr.push({ id, ...processedData });
     });
 
     const qr = query(
@@ -348,11 +372,12 @@ export const getPlayersfromTeamName = async (
     querySnapshot2.forEach((doc) => {
       const data = doc.data();
       const id = doc.id;
-      arr.push({ id, ...data });
+      const processedData = processData(data);
+      arr.push({ id, ...processedData });
     });
     dispatch(setcreatePlayers(arr));
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 
@@ -368,12 +393,23 @@ export const getAllUsers = async (dispatch, func) => {
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const id = doc.id;
-      return arr.push({ id, ...data });
+      
+      // Convert Firebase Timestamps to ISO strings for Redux serialization
+      const processedData = { ...data };
+      Object.keys(processedData).forEach(key => {
+        const value = processedData[key];
+        // Check if value is a Firebase Timestamp
+        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+          processedData[key] = new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+        }
+      });
+      
+      return arr.push({ id, ...processedData });
     });
     dispatch(setAllUsers(arr));
     func(false);
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const getCreatedteamsbymatchId = async (func, matchId,update) => {
@@ -397,7 +433,7 @@ export const getCreatedteamsbymatchId = async (func, matchId,update) => {
       await getPrizeDistribution(matchId,func);
     }
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const getPrizeDistribution = async (matchId,func) => {
@@ -432,12 +468,23 @@ export const getAllTeams = async (dispatch, func) => {
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const id = doc.id;
-      return arr.push({ id, ...data });
+      
+      // Convert Firebase Timestamps to ISO strings for Redux serialization
+      const processedData = { ...data };
+      Object.keys(processedData).forEach(key => {
+        const value = processedData[key];
+        // Check if value is a Firebase Timestamp
+        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+          processedData[key] = new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+        }
+      });
+      
+      return arr.push({ id, ...processedData });
     });
     dispatch(setAllTeams(arr));
     func(false);
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const deleteTeam = async (id, func) => {
@@ -445,7 +492,7 @@ export const deleteTeam = async (id, func) => {
     await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.TEAM_NAMES, id));
     func();
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const deleteUser = async (id, func) => {
@@ -453,7 +500,7 @@ export const deleteUser = async (id, func) => {
     await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.USERS, id));
     if (func) func();
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const deletePlayers = async (id, func) => {
@@ -461,7 +508,7 @@ export const deletePlayers = async (id, func) => {
     await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.PLAYERS, id));
     if (func) func();
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const deleteMatch = async (id, func) => {
@@ -469,7 +516,7 @@ export const deleteMatch = async (id, func) => {
     await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.TOURNAMENTS, id));
     func();
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const markItcomplete = async (fdata, func) => {
@@ -479,7 +526,7 @@ export const markItcomplete = async (fdata, func) => {
       func();
     });
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 // export const updateTournament = async (fdata, func) => {
@@ -489,7 +536,7 @@ export const markItcomplete = async (fdata, func) => {
 //       if (func) func();
 //     });
 //   } catch (error) {
-//     console.log(error);
+//     // Removed console.log for better performance
 //     throw error;
 //   }
 // };
@@ -535,12 +582,23 @@ export const getAllPlayers = async (dispatch, func) => {
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const id = doc.id;
-      return arr.push({ id, ...data });
+      
+      // Convert Firebase Timestamps to ISO strings for Redux serialization
+      const processedData = { ...data };
+      Object.keys(processedData).forEach(key => {
+        const value = processedData[key];
+        // Check if value is a Firebase Timestamp
+        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+          processedData[key] = new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+        }
+      });
+      
+      return arr.push({ id, ...processedData });
     });
     dispatch(setAllPlayers(arr));
     func(false);
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };
 export const getAllMatches = async (dispatch, func) => {
@@ -551,11 +609,22 @@ export const getAllMatches = async (dispatch, func) => {
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const id = doc.id;
-      return arr.push({ id, ...data });
+      
+      // Convert Firebase Timestamps to ISO strings for Redux serialization
+      const processedData = { ...data };
+      Object.keys(processedData).forEach(key => {
+        const value = processedData[key];
+        // Check if value is a Firebase Timestamp
+        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+          processedData[key] = new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+        }
+      });
+      
+      return arr.push({ id, ...processedData });
     });
     dispatch(setAllMatches(arr));
     func(false);
   } catch (error) {
-    console.log(error);
+    // Removed console.log for better performance
   }
 };

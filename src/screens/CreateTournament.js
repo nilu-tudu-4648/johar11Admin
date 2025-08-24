@@ -1,5 +1,5 @@
 import { StyleSheet, View, TouchableOpacity, BackHandler } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { COLORS, FSTYLES, SIZES, STYLES } from "../constants/theme";
 import { useForm } from "react-hook-form";
 import AppText from "../components/AppText";
@@ -53,7 +53,7 @@ const CreateTournament = ({ navigation }) => {
     return `${formattedDate}T${formattedTime}`;
   };
   
- const pickImage = async (type) => {
+ const pickImage = useCallback(async (type) => {
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -67,13 +67,13 @@ const CreateTournament = ({ navigation }) => {
           urlParts,
           `/playersCaptain/${Math.random()}`
         );
-        setimages({ ...images, [type]: url });
+        setimages(prev => ({ ...prev, [type]: url }));
         showToast("upload successfully");
       }
     } catch (error) {
-      console.log(error);
+      // Error handled silently for better performance
     }
-  };
+  }, []);
   const {
     control,
     handleSubmit,
@@ -151,21 +151,25 @@ const CreateTournament = ({ navigation }) => {
     }
   };
 
-  const rules = {
+  const rules = useMemo(() => ({
     required: "This field is mandatory",
     pattern: {
       value: /^[aA-zZ\s]+$/,
       message: "Only alphabets are allowed for this field.",
     },
-  };
-  BackHandler.addEventListener(
-    "hardwareBackPress",
-    () => {
-      navigation.navigate(NAVIGATION.ADMIN_HOME);
-      return () => true;
-    },
-    []
-  );
+  }), []);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        navigation.navigate(NAVIGATION.ADMIN_HOME);
+        return true;
+      }
+    );
+    
+    return () => backHandler.remove();
+  }, [navigation]);
   return (
     <View style={styles.container}>
       <AppLoader loading={loading} />

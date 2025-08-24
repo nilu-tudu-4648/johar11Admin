@@ -19,7 +19,8 @@ const EditPlayerDialog = ({ visible, setvisible, item, callGetAllplayer }) => {
       ite !== "id" &&
       ite !== "selectedViceCaptain" &&
       ite !== "selectedCaptain" &&
-      ite !== "isActive"
+      ite !== "isActive" &&
+      ite !== "playerPic"
   );
   const handleSubmit = async () => {
     try {
@@ -47,8 +48,8 @@ const EditPlayerDialog = ({ visible, setvisible, item, callGetAllplayer }) => {
           {"Update Player Details"}
         </AppText>
         {filterKeys.map((ite, i) => (
-          <View key={i}>
-            <AppText size={1.5}>{ite}</AppText>
+          <View key={i} >
+            <AppText size={1.5} style={{ marginVertical: 10 }}>{ite.toUpperCase()}</AppText>
             <AppTextInput
               placeholder={ite}
               value={itemSelected[ite]}

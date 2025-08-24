@@ -1,4 +1,4 @@
-import { BackHandler, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { BackHandler, FlatList, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AppButton,
@@ -8,6 +8,7 @@ import {
   AppView,
   HomeHeader,
   EditTournamentDialog,
+  OptimizedImage,
 } from "../components";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -17,7 +18,7 @@ import {
 } from "../constants/functions";
 import { NAVIGATION } from "../constants/routes";
 import { COLORS, FSTYLES, SIZES } from "../constants/theme";
-import { Image } from "react-native";
+import { selectAllMatches } from "../store/selectors";
 
 // Helper function to get status color
 const getStatusColor = (status) => {
@@ -35,14 +36,131 @@ const getStatusColor = (status) => {
   }
 };
 
+// Memoized Tournament Item Component for better performance
+const TournamentItem = React.memo(({ item, index, navigation, onDelete, onEdit, onComplete }) => (
+  <TouchableOpacity 
+    key={item.id}
+    onPress={() => navigation.navigate(NAVIGATION.PRIZE_DISTRIBUTION, {item})} 
+    style={[
+      styles.card,
+      { backgroundColor: item.isTesting === 'true' ? COLORS.lightgray : COLORS.white },
+      item.status === 'completed' && styles.completedCard
+    ]}
+  >
+    {/* Header with Entry and Prize */}
+    <View style={styles.cardHeader}>
+      <View style={styles.prizeContainer}>
+        <AppText size={1.2} color={COLORS.lighttext}>Entry</AppText>
+        <AppText size={1.6} bold={true} color={COLORS.black}>{item.entryFees}</AppText>
+      </View>
+      <View style={styles.prizeContainer}>
+        <AppText size={1.2} color={COLORS.lighttext}>Prize</AppText>
+        <AppText size={1.6} bold={true} color={COLORS.primary}>{item.prizeAmount}</AppText>
+      </View>
+      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+        <AppText size={1.1} color={COLORS.white} bold={true}>
+          {item.status?.toUpperCase()}
+        </AppText>
+      </View>
+    </View>
+
+    {/* Teams Section */}
+    <View style={styles.teamsContainer}>
+      <View style={styles.teamSection}>
+        <View style={styles.teamImageContainer}>
+          <OptimizedImage
+            source={item.captain1Pic ? { uri: item.captain1Pic } : null}
+            style={styles.teamImage}
+            placeholder={
+              <AppText color={COLORS.white} size={1.5} bold={true}>
+                {item.firstTeamName?.charAt(0)}
+              </AppText>
+            }
+            placeholderStyle={[styles.teamImage, styles.placeholderImage]}
+          />
+        </View>
+        <AppText bold={true} style={styles.teamName} numberOfLines={1}>
+          {item.firstTeamName}
+        </AppText>
+      </View>
+
+      <View style={styles.vsContainer}>
+        <AppText bold={true} size={1.8} color={COLORS.primary}>VS</AppText>
+      </View>
+
+      <View style={styles.teamSection}>
+        <View style={styles.teamImageContainer}>
+          <OptimizedImage
+            source={item.captain2Pic ? { uri: item.captain2Pic } : null}
+            style={styles.teamImage}
+            placeholder={
+              <AppText color={COLORS.white} size={1.5} bold={true}>
+                {item.secondTeamName?.charAt(0)}
+              </AppText>
+            }
+            placeholderStyle={[styles.teamImage, styles.placeholderImage, { backgroundColor: COLORS.primary }]}
+          />
+        </View>
+        <AppText bold={true} style={styles.teamName} numberOfLines={1}>
+          {item.secondTeamName}
+        </AppText>
+      </View>
+    </View>
+
+    {/* Match Details */}
+    <View style={styles.matchDetails}>
+      <View style={styles.detailRow}>
+        <AppText size={1.3} color={COLORS.lighttext}>📅 {item.date}</AppText>
+        <AppText size={1.3} color={COLORS.lighttext}>⏰ {item.time}</AppText>
+      </View>
+      <View style={styles.detailRow}>
+        <AppText size={1.3} color={COLORS.lighttext}>📍 {item.eventLocation}</AppText>
+      </View>
+      <View style={styles.detailRow}>
+        <AppText size={1.3} color={COLORS.lighttext}>🏆 {item.eventName}</AppText>
+      </View>
+    </View>
+
+    {/* Action Buttons */}
+    <View style={styles.actionButtons}>
+      <AppButton
+        varient={"outlined"}
+        borderColor={COLORS.red}
+        textColor={COLORS.red}
+        onPress={() => onDelete(item.id)}
+        title={"Delete"}
+        style={styles.actionButton}
+      />
+      <AppButton
+        varient={"outlined"}
+        borderColor={COLORS.primary}
+        textColor={COLORS.primary}
+        onPress={() => onEdit(item)}
+        title={"Edit"}
+        style={styles.actionButton}
+      />
+      <AppButton
+        varient={item.status === 'completed' ? "filled" : "outlined"}
+        backgroundColor={item.status === 'completed' ? COLORS.green : COLORS.transparent}
+        borderColor={item.status === 'completed' ? COLORS.green : COLORS.green}
+        textColor={item.status === 'completed' ? COLORS.white : COLORS.green}
+        onPress={() => onComplete({ ...item, status: "completed" })}
+        title={item.status === 'completed' ? "Completed" : "Complete"}
+        style={styles.actionButton}
+      />
+    </View>
+  </TouchableOpacity>
+));
+
 const AllTournaments = ({ navigation }) => {
-  const { allMatches } = useSelector((state) => state.entities.adminReducer);
+  const allMatches = useSelector(selectAllMatches);
   const [loading, setloading] = useState(true);
-  const [data, setData] = useState([]);
   const [query, setquery] = useState("");
   const [editTournamentVisible, setEditTournamentVisible] = useState(false);
   const [editTournamentItem, setEditTournamentItem] = useState(null);
   const dispatch = useDispatch();
+  
+  // Memoized filter function
   const filterFunction = useMemo(() => {
     return (item) => {
       const lowercaseQuery = query.toLowerCase();
@@ -53,32 +171,60 @@ const AllTournaments = ({ navigation }) => {
     };
   }, [query]);
 
-  const filterData = useCallback(() => {
+  // Memoized filtered data
+  const filteredData = useMemo(() => {
     if (query) {
-      const filteredData = allMatches.filter(filterFunction);
-      setData(filteredData);
-    } else {
-      setData(allMatches);
+      return allMatches.filter(filterFunction);
     }
+    return allMatches;
   }, [query, allMatches, filterFunction]);
-  const getMatch = () => {
+
+  // Memoized callback functions
+  const getMatch = useCallback(() => {
     getAllMatches(dispatch, setloading);
-  };
-  useEffect(() => {
-    getMatch();
   }, [dispatch]);
 
+  const handleDelete = useCallback((id) => {
+    deleteMatch(id, getMatch);
+  }, [getMatch]);
+
+  const handleEdit = useCallback((item) => {
+    setEditTournamentItem(item);
+    setEditTournamentVisible(true);
+  }, []);
+
+  const handleComplete = useCallback((item) => {
+    markItcomplete(item, getMatch);
+  }, [getMatch]);
+
+  const renderItem = useCallback(({ item, index }) => (
+    <TournamentItem
+      item={item}
+      index={index}
+      navigation={navigation}
+      onDelete={handleDelete}
+      onEdit={handleEdit}
+      onComplete={handleComplete}
+    />
+  ), [navigation, handleDelete, handleEdit, handleComplete]);
+
+  const keyExtractor = useCallback((item) => item.id, []);
+
   useEffect(() => {
-    filterData();
-  }, [query, allMatches, filterFunction, filterData]);
-  BackHandler.addEventListener(
-    "hardwareBackPress",
-    () => {
-      navigation.navigate(NAVIGATION.ADMIN_HOME);
-      return () => true;
-    },
-    []
-  );
+    getMatch();
+  }, [getMatch]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        navigation.navigate(NAVIGATION.ADMIN_HOME);
+        return true;
+      }
+    );
+    
+    return () => backHandler.remove();
+  }, [navigation]);
 
   return (
     <>
@@ -91,135 +237,22 @@ const AllTournaments = ({ navigation }) => {
           searchQuery={query}
           placeholder={"Search by Team Name"}
         />
-        <ScrollView
-          style={styles.scrollView}
+        <FlatList
+          data={filteredData}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
-        >
-          {data?.map((item, i) => (
-            <TouchableOpacity 
-              key={i} 
-              onPress={() => navigation.navigate(NAVIGATION.PRIZE_DISTRIBUTION, {item})} 
-              style={[
-                styles.card,
-                { backgroundColor: item.isTesting === 'true' ? COLORS.lightgray : COLORS.white },
-                item.status === 'completed' && styles.completedCard
-              ]}
-            >
-              {/* Header with Entry and Prize */}
-              <View style={styles.cardHeader}>
-                <View style={styles.prizeContainer}>
-                  <AppText size={1.2} color={COLORS.lighttext}>Entry</AppText>
-                  <AppText size={1.6} bold={true} color={COLORS.black}>{item.entryFees}</AppText>
-                </View>
-                <View style={styles.prizeContainer}>
-                  <AppText size={1.2} color={COLORS.lighttext}>Prize</AppText>
-                  <AppText size={1.6} bold={true} color={COLORS.primary}>{item.prizeAmount}</AppText>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-                  <AppText size={1.1} color={COLORS.white} bold={true}>
-                    {item.status?.toUpperCase()}
-                  </AppText>
-                </View>
-              </View>
-
-              {/* Teams Section */}
-              <View style={styles.teamsContainer}>
-                <View style={styles.teamSection}>
-                  <View style={styles.teamImageContainer}>
-                    {item.captain1Pic ? (
-                      <Image
-                        source={{ uri: item.captain1Pic }}
-                        style={styles.teamImage}
-                      />
-                    ) : (
-                      <View style={[styles.teamImage, styles.placeholderImage]}>
-                        <AppText color={COLORS.white} size={1.5} bold={true}>
-                          {item.firstTeamName?.charAt(0)}
-                        </AppText>
-                      </View>
-                    )}
-                  </View>
-                  <AppText bold={true} style={styles.teamName} numberOfLines={1}>
-                    {item.firstTeamName}
-                  </AppText>
-                </View>
-
-                <View style={styles.vsContainer}>
-                  <AppText bold={true} size={1.8} color={COLORS.primary}>VS</AppText>
-                </View>
-
-                <View style={styles.teamSection}>
-                  <View style={styles.teamImageContainer}>
-                    {item.captain2Pic ? (
-                      <Image
-                        source={{ uri: item.captain2Pic }}
-                        style={styles.teamImage}
-                      />
-                    ) : (
-                      <View style={[styles.teamImage, styles.placeholderImage, { backgroundColor: COLORS.primary }]}>
-                        <AppText color={COLORS.white} size={1.5} bold={true}>
-                          {item.secondTeamName?.charAt(0)}
-                        </AppText>
-                      </View>
-                    )}
-                  </View>
-                  <AppText bold={true} style={styles.teamName} numberOfLines={1}>
-                    {item.secondTeamName}
-                  </AppText>
-                </View>
-              </View>
-
-              {/* Match Details */}
-              <View style={styles.matchDetails}>
-                <View style={styles.detailRow}>
-                  <AppText size={1.3} color={COLORS.lighttext}>📅 {item.date}</AppText>
-                  <AppText size={1.3} color={COLORS.lighttext}>⏰ {item.time}</AppText>
-                </View>
-                <View style={styles.detailRow}>
-                  <AppText size={1.3} color={COLORS.lighttext}>📍 {item.eventLocation}</AppText>
-                </View>
-                <View style={styles.detailRow}>
-                  <AppText size={1.3} color={COLORS.lighttext}>🏆 {item.eventName}</AppText>
-                </View>
-              </View>
-
-              {/* Action Buttons */}
-              <View style={styles.actionButtons}>
-                <AppButton
-                  varient={"outlined"}
-                  borderColor={COLORS.red}
-                  textColor={COLORS.red}
-                  onPress={() => deleteMatch(item.id, getMatch)}
-                  title={"Delete"}
-                  style={styles.actionButton}
-                />
-                <AppButton
-                  varient={"outlined"}
-                  borderColor={COLORS.primary}
-                  textColor={COLORS.primary}
-                  onPress={() => {
-                    setEditTournamentItem(item);
-                    setEditTournamentVisible(true);
-                  }}
-                  title={"Edit"}
-                  style={styles.actionButton}
-                />
-                <AppButton
-                  varient={item.status === 'completed' ? "filled" : "outlined"}
-                  backgroundColor={item.status === 'completed' ? COLORS.green : COLORS.transparent}
-                  borderColor={item.status === 'completed' ? COLORS.green : COLORS.green}
-                  textColor={item.status === 'completed' ? COLORS.white : COLORS.green}
-                  onPress={() =>
-                    markItcomplete({ ...item, status: "completed" }, getMatch)
-                  }
-                  title={item.status === 'completed' ? "Completed" : "Complete"}
-                  style={styles.actionButton}
-                />
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          removeClippedSubviews={true}
+          getItemLayout={(data, index) => ({
+            length: 220, // Approximate height of each item
+            offset: 220 * index,
+            index,
+          })}
+        />
         <EditTournamentDialog
           item={editTournamentItem}
           visible={editTournamentVisible}

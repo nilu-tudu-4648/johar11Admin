@@ -31,7 +31,8 @@ function AppNavigator() {
     (state) => state.entities.userReducer
   );
   const dispatch = useDispatch();
-  const checkUserDetails = async () => {
+  
+  const checkUserDetails = React.useCallback(async () => {
     try {
       const loggedInUserString = await AsyncStorage.getItem("loggedInUser");
       if (loggedInUserString) {
@@ -43,11 +44,13 @@ function AppNavigator() {
     } catch (error) {
       console.log({ error });
     }
-  };
+  }, [dispatch]);
+  
   React.useEffect(() => {
     checkUserDetails();
-  }, [userLoggedIn]);
-  const options = { headerShown: false };
+  }, [checkUserDetails, userLoggedIn]);
+  
+  const options = React.useMemo(() => ({ headerShown: false }), []);
   return (
     <Stack.Navigator
       screenOptions={({ navigation }) => ({
