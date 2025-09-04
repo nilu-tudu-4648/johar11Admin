@@ -11,7 +11,7 @@ import {
   UserDetailsDialog,
 } from "../components";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteUser, getAllUsers, formatDate } from "../constants/functions";
+import { deleteUser, getAllUsers, getAllUsersPage, formatDate } from "../constants/functions";
 import { NAVIGATION } from "../constants/routes";
 import { COLORS, SIZES } from "../constants/theme";
 import { Avatar } from "react-native-paper";
@@ -21,11 +21,20 @@ const AllUsersScreen = ({ navigation }) => {
   const { allusers } = useSelector((state) => state.entities.adminReducer);
   const dispatch = useDispatch();
   const [loading, setloading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [query, setquery] = useState("");
   const [selectedDate, setSelectedDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  
+  // Pagination state
+  const [currentUsers, setCurrentUsers] = useState([]);
+  const [lastVisible, setLastVisible] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const PAGE_SIZE = 20;
 
   const isSameDay = (d1, d2) =>
     d1.getFullYear() === d2.getFullYear() &&
@@ -51,18 +60,73 @@ const AllUsersScreen = ({ navigation }) => {
   }, [query, selectedDate]);
 
   const filteredAndSortedData = useMemo(() => {
-    if (!allusers || allusers.length === 0) return [];
+    if (!currentUsers || currentUsers.length === 0) return [];
     
-    const filtered = allusers.filter(filterFunction);
+    const filtered = currentUsers.filter(filterFunction);
     
+    // Sort by dateJoined (newest first) since Firebase query orders by document ID
     return filtered.sort((a, b) => {
       const dateA = a.dateJoined ? new Date(a.dateJoined) : new Date(0);
       const dateB = b.dateJoined ? new Date(b.dateJoined) : new Date(0);
       return dateB - dateA;
     });
-  }, [allusers, filterFunction]);
+  }, [currentUsers, filterFunction]);
 
   const callGetAllusers = useCallback(() => getAllUsers(dispatch, setloading), [dispatch]);
+
+  // Load initial users with pagination
+  const loadInitialUsers = useCallback(async () => {
+    try {
+      setloading(true);
+      const result = await getAllUsersPage({ pageSize: PAGE_SIZE });
+      setCurrentUsers(result.users);
+      setLastVisible(result.lastVisible);
+      setHasNextPage(result.hasNextPage);
+      setTotalUsersCount(allusers?.length || 0); // Keep total count from Redux for display
+    } catch (error) {
+      console.error('Error loading initial users:', error);
+    } finally {
+      setloading(false);
+    }
+  }, [allusers?.length, PAGE_SIZE]);
+
+  // Load more users
+  const loadMoreUsers = useCallback(async () => {
+    if (!hasNextPage || loadingMore) return;
+    
+    try {
+      setLoadingMore(true);
+      const result = await getAllUsersPage({ 
+        pageSize: PAGE_SIZE, 
+        lastVisible: lastVisible 
+      });
+      
+      setCurrentUsers(prev => [...prev, ...result.users]);
+      setLastVisible(result.lastVisible);
+      setHasNextPage(result.hasNextPage);
+    } catch (error) {
+      console.error('Error loading more users:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasNextPage, loadingMore, lastVisible, PAGE_SIZE]);
+
+  // Refresh users
+  const refreshUsers = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      const result = await getAllUsersPage({ pageSize: PAGE_SIZE });
+      setCurrentUsers(result.users);
+      setLastVisible(result.lastVisible);
+      setHasNextPage(result.hasNextPage);
+      // Also refresh the Redux store for total count
+      await getAllUsers(dispatch, () => {});
+    } catch (error) {
+      console.error('Error refreshing users:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch, PAGE_SIZE]);
   
   const handleUserPress = useCallback((user) => {
     setSelectedUser(user);
@@ -70,8 +134,10 @@ const AllUsersScreen = ({ navigation }) => {
   }, []);
   
   useEffect(() => {
+    // Load both total count (Redux) and initial paginated data
     callGetAllusers();
-  }, [callGetAllusers]);
+    loadInitialUsers();
+  }, [callGetAllusers, loadInitialUsers]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -84,6 +150,16 @@ const AllUsersScreen = ({ navigation }) => {
 
     return () => backHandler.remove();
   }, [navigation]);
+
+  const handleDeleteUser = useCallback(async (userId) => {
+    try {
+      await deleteUser(userId, callGetAllusers);
+      // Refresh paginated data after deletion
+      await refreshUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+  }, [callGetAllusers, refreshUsers]);
 
   const renderUserItem = useCallback(({ item }) => (
     <TouchableOpacity style={styles.card} onPress={() => handleUserPress(item)} activeOpacity={0.7}>
@@ -130,13 +206,13 @@ const AllUsersScreen = ({ navigation }) => {
         <AppButton
           varient={"outlined"}
           borderColor={COLORS.red}
-          onPress={() => deleteUser(item.id, callGetAllusers)}
+          onPress={() => handleDeleteUser(item.id)}
           title={"Delete"}
           style={styles.deleteButton}
         />
       </View>
     </TouchableOpacity>
-  ), [callGetAllusers, handleUserPress]);
+  ), [handleDeleteUser, handleUserPress]);
 
   return (
     <>
@@ -147,7 +223,7 @@ const AllUsersScreen = ({ navigation }) => {
           style={{ width: "99%" }}
           onChangeSearch={(text) => setquery(text)}
           searchQuery={query}
-          placeholder={"Search by Name or Mobile"}
+          placeholder={"Search in loaded users (Name or Mobile)"}
         />
         
         {showDatePicker && (
@@ -208,19 +284,19 @@ const AllUsersScreen = ({ navigation }) => {
               <View style={styles.summaryItem}>
                 <AppText size={1.2} color={COLORS.gray}>Total Users</AppText>
                 <AppText size={1.6} style={styles.summaryValue}>
-                  {allusers?.length || 0}
+                  {allusers?.length || totalUsersCount || 0}
                 </AppText>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryItem}>
                 <AppText size={1.2} color={COLORS.gray}>
-                  {selectedDate ? 'Filtered Results' : 'Showing All'}
+                  {selectedDate ? 'Filtered' : 'Loaded'}
                 </AppText>
                 <AppText size={1.6} style={[
                   styles.summaryValue,
                   selectedDate && { color: COLORS.primary }
                 ]}>
-                  {filteredAndSortedData.length}
+                  {selectedDate ? filteredAndSortedData.length : currentUsers.length}
                 </AppText>
               </View>
             </View>
@@ -236,6 +312,27 @@ const AllUsersScreen = ({ navigation }) => {
           maxToRenderPerBatch={5}
           windowSize={10}
           removeClippedSubviews={true}
+          refreshing={refreshing}
+          onRefresh={refreshUsers}
+          onEndReached={query || selectedDate ? null : loadMoreUsers}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={() => {
+            if (loadingMore) {
+              return (
+                <View style={styles.footerLoader}>
+                  <AppText size={1.3} color={COLORS.gray}>Loading more users...</AppText>
+                </View>
+              );
+            }
+            if (!hasNextPage && currentUsers.length > 0 && !query && !selectedDate) {
+              return (
+                <View style={styles.footerLoader}>
+                  <AppText size={1.3} color={COLORS.gray}>No more users to load</AppText>
+                </View>
+              );
+            }
+            return null;
+          }}
           getItemLayout={(data, index) => ({
             length: 156, // card height (140) + marginVertical (8*2)
             offset: 156 * index,
@@ -377,5 +474,10 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -16,6 +16,9 @@ import {
   getDoc,
   getFirestore,
   serverTimestamp,
+  orderBy,
+  limit,
+  startAfter,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import {
@@ -410,6 +413,67 @@ export const getAllUsers = async (dispatch, func) => {
     func(false);
   } catch (error) {
     // Removed console.log for better performance
+  }
+};
+
+// Cursor-based pagination for Users collection
+export const getAllUsersPage = async ({ pageSize = 25, lastVisible = null } = {}) => {
+  try {
+    // Simple approach: Use document ID ordering to avoid composite index
+    // This will work immediately without requiring Firebase index creation
+    let q;
+    
+    if (lastVisible) {
+      q = query(
+        collection(db, FIRESTORE_COLLECTIONS.USERS),
+        where("admin", "==", "false"),
+        orderBy("__name__"), // Order by document ID (always indexed)
+        startAfter(lastVisible),
+        limit(pageSize + 1)
+      );
+    } else {
+      q = query(
+        collection(db, FIRESTORE_COLLECTIONS.USERS),
+        where("admin", "==", "false"),
+        orderBy("__name__"), // Order by document ID (always indexed)
+        limit(pageSize + 1)
+      );
+    }
+
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+    const hasNextPage = docs.length > pageSize;
+    const pageDocs = hasNextPage ? docs.slice(0, pageSize) : docs;
+
+    const users = pageDocs.map((docSnap) => {
+      const data = docSnap.data();
+      const id = docSnap.id;
+
+      // Convert Firebase Timestamps to ISO strings for Redux serialization
+      const processedData = { ...data };
+      Object.keys(processedData).forEach((key) => {
+        const value = processedData[key];
+        if (
+          value &&
+          typeof value === "object" &&
+          value.seconds !== undefined &&
+          value.nanoseconds !== undefined
+        ) {
+          processedData[key] = new Date(
+            value.seconds * 1000 + value.nanoseconds / 1000000
+          ).toISOString();
+        }
+      });
+
+      return { id, ...processedData };
+    });
+
+    const newLastVisible = pageDocs.length ? pageDocs[pageDocs.length - 1] : lastVisible;
+    console.log("Fetched users:", users);
+    return { users, lastVisible: newLastVisible, hasNextPage };
+  } catch (error) {
+    console.error("Error fetching users page:", error);
+    return { users: [], lastVisible: null, hasNextPage: false };
   }
 };
 export const getCreatedteamsbymatchId = async (func, matchId,update) => {
